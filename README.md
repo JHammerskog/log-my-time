@@ -37,6 +37,9 @@ uv python install 3.13
 # Install python dependencies
 uv venv
 uv pip install -r pyproject.toml --all-extras
+
+# Lock dependencies
+uv pip compile pyproject.toml -o requirements.txt
 ```
 
 #### Connecting to the database
