@@ -39,8 +39,8 @@ ENV PROJECT_ROOT='/home/app/log-my-time'
 
 # Install python deps
 RUN pip install pipenv
-COPY --chown=app ./Pipfile.lock ./Pipfile ./
-RUN pipenv install --categories="packages dev-packages" --system --ignore-pipfile
+COPY --chown=app ./requirements.txt ./
+RUN pip install -r requirements.txt
 
 # Install playwright
 RUN bash -c '[[ $TEST_MODE == 1 && ! -d ~/.cache/ms-playwright/chromium* ]] && python -m playwright install chromium || true'
