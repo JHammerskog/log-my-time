@@ -1,3 +1,38 @@
+[project]
+name = "log-my-time"
+version = "0.1.0"
+description = "A simple time tracking web application"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [ 
+    "arrow",
+    "click",
+    "Flask==3.1.0",
+    "argon2-cffi",
+    "redis",
+    "sqlalchemy>2,<3",
+    "holidays",
+    "rollbar",
+    "requests",
+    "flask-sqlalchemy-lite",
+    "flask-alembic",
+    "gunicorn[gthread]",
+    "pytz",
+    "python-postmark",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "devtools[pygments]",
+    "watchdog<5",
+    "pytest-playwright",
+    "coverage",
+    "djlint",
+    "ruff"
+]
+
+
 [tool.djlint]
 profile = "jinja"
 ignore = "J004,J018,H006,T002,H021,H031"

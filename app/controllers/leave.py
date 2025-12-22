@@ -45,12 +45,44 @@ def create(leave_type: str, start: int, duration: float, note: str = "", public_
     return leave
 
 
+def create_range(
+    leave_type: str,
+    start: str,
+    end: str,
+    note: str = "",
+    public_holiday: bool = False,
+):
+    _settings = settings.fetch()
+    _tz = _settings.timezone
+
+    start_dt = arrow.get(start, tzinfo=_tz)
+    end_dt = arrow.get(end, tzinfo=_tz)
+
+    current_dt = start_dt
+    while current_dt <= end_dt:
+        # Check current day is a work day
+        if not _settings.is_work_day(current_dt.weekday()):
+            current_dt = current_dt.shift(days=1)
+            continue
+
+        create(
+            leave_type=leave_type,
+            start=current_dt.int_timestamp,
+            duration=1.0,
+            note=note,
+            public_holiday=public_holiday,
+        )
+
+        current_dt = current_dt.shift(days=1)
+
+
 def update(
     row_id: int, leave_type: str, start: int, duration: float, note: Optional[str] = None, public_holiday: bool = False
 ) -> Leave:
     leave = db.session.scalars(sa.select(Leave).where(Leave.id == row_id)).first()
     if not leave:
         abort(403)
+    assert leave is not None  # for ty
 
     _settings = settings.fetch()
     _tz = _settings.timezone

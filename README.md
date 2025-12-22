@@ -17,7 +17,7 @@ First create the `config/app_config.py`, then start on http://localhost:4000/ vi
 
 ```bash
 # Dev mode
-docker-compose up -d --build app
+docker compose up -d --build app
 
 # Prod mode
 docker compose -f docker-compose.yml up -d --build
@@ -31,14 +31,15 @@ Requires python 3.12
 # Install JS linter
 npm install
 
-# Install python deps with pipenv
-pipenv install --categories="packages dev-packages local-packages"
+# Install python
+uv python install 3.13
 
-# Start a pipenv shell
-pipenv shell
+# Install python dependencies
+uv venv
+uv pip install -r pyproject.toml --all-extras
 
-# Upgrade dependencies
-python3 -m pipenv upgrade --categories="packages dev-packages local-packages"
+# Lock dependencies
+uv pip compile pyproject.toml -o requirements.txt
 ```
 
 #### Connecting to the database
