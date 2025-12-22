@@ -33,13 +33,26 @@ def leave_form(row_id: Optional[int] = None):
                 public_holiday=request.json.get("public-holiday") == "on",
             )
         else:
-            leave.create(
-                leave_type=request.json["leave_type"],
-                start=request.json["start"],
-                duration=request.json["duration"],
-                note=request.json["note"],
-                public_holiday=request.json.get("public-holiday") == "on",
-            )
+            # If we have a date range then call the `create_range` method to add multiple records
+            start = request.json["start"]
+            end = None
+            if " to " in start:
+                start, end = start.split(" to ")
+                leave.create_range(
+                    leave_type=request.json["leave_type"],
+                    start=start,
+                    end=end,
+                    note=request.json["note"],
+                    public_holiday=request.json.get("public-holiday") == "on",
+                )
+            else:
+                leave.create(
+                    leave_type=request.json["leave_type"],
+                    start=start,
+                    duration=request.json["duration"],
+                    note=request.json["note"],
+                    public_holiday=request.json.get("public-holiday") == "on",
+                )
 
         return "", 200
 

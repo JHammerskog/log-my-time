@@ -51,6 +51,7 @@ window.initDatePicker = picker => {
             locale: {
                 firstDayOfWeek: 1,
             },
+            mode: picker.hasAttribute("data-is-range") ? "range" : "single",
         });
     } else if (pickerType === "datetime") {
         let defaultValue = value;
