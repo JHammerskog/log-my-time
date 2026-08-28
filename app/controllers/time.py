@@ -74,13 +74,11 @@ def all_for_week(week: Optional[str] = None) -> Sequence[Time]:
     if not week:
         now = arrow.utcnow()
 
-        y, w = now.year, now.week
+        # Adjust the starting day to the first working day of the week
+        while now.weekday() > _settings.week_start_0:
+            now = now.shift(days=-1)
 
-        # Handle the case where the new year starts but the week started the previous year
-        if w >= 52 and now.month == 1:
-            y -= 1
-
-        week = "{}-W{:02}".format(y, w)
+        week = now.format("W").rsplit("-", 1)[0]
 
     week_start = arrow.get(week)
 
@@ -177,9 +175,8 @@ def clock_out(end: str):
     ).first()
 
     if current_record:
+        break_end(end)  # If clocking out, call end break function
         current_record.end = end_dt.int_timestamp
-        # TODO: Is this needed?
-        # current_record.logged = end_dt.int_timestamp - current_record.start
         db.session.commit()
 
 
@@ -206,6 +203,7 @@ def break_start(start: str):
         Break(
             time_id=current_record.id,
             start=start_dt.int_timestamp,
+            user_id=get_user().id,
         )
     )
 
@@ -262,6 +260,7 @@ def add_break(time_id: str, break_start: str, break_end: str | None):
             time_id=time_record.id,
             start=start_dt.int_timestamp,
             end=end_dt.int_timestamp if end_dt else None,
+            user_id=get_user().id,
         )
     )
 

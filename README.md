@@ -4,7 +4,8 @@ Basic time logging tool.
 
 ## Demo
 
-![file](https://user-images.githubusercontent.com/10670565/168468584-cb9182ad-d82e-4fe5-aa96-c937a826611c.gif)
+https://github.com/user-attachments/assets/d69b5651-fd1c-4af6-b2e5-2f8328d926db
+
 
 ---
 
@@ -16,7 +17,7 @@ First create the `config/app_config.py`, then start on http://localhost:4000/ vi
 
 ```bash
 # Dev mode
-docker-compose up -d --build app
+docker compose up -d --build app
 
 # Prod mode
 docker compose -f docker-compose.yml up -d --build
@@ -30,11 +31,15 @@ Requires python 3.12
 # Install JS linter
 npm install
 
-# Install python deps with pipenv
-pipenv install --categories="packages dev-packages local-packages"
+# Install python
+uv python install 3.13
 
-# Start a pipenv shell
-pipenv shell
+# Install python dependencies
+uv venv
+uv pip install -r pyproject.toml --all-extras
+
+# Lock dependencies
+uv pip compile pyproject.toml -o requirements.txt
 ```
 
 #### Connecting to the database
@@ -50,13 +55,13 @@ pipenv shell
 ./tools/ctl test
 
 # Or a subset of tests
-./tools/ctl test tests/e2e/test_time.py tests/e2e/test_holidays.py
+./tools/ctl test tests/unit/test_calculate_expected_hours.py
 ```
 
 #### Database migrations
 
 ```bash
-docker exec -it log-my-time flask db migrate -m "Description of change"
+docker exec -it log-my-time flask db revision "Description of change"
 docker exec -it log-my-time flask db upgrade
 ```
 

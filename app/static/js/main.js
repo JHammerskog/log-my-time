@@ -1,4 +1,3 @@
-import flatpickr from "https://cdn.jsdelivr.net/npm/flatpickr/+esm";
 import spacetime from "https://cdn.jsdelivr.net/npm/spacetime/+esm";
 import { ClearFlatpickr } from "/static/js/components/clear_flatpickr.js";
 import { ModalFrame } from "/static/js/components/modal_frame.js";
@@ -19,6 +18,7 @@ window.initDatePicker = picker => {
     mins = Math.floor(mins / 5) * 5; // Round minutes to nearest 5 mins
 
     const pickerType = picker.getAttribute("data-date-type");
+    const dateFormat = picker.getAttribute("data-date-format");
     let value = picker.getAttribute("data-date-value");
     let setDefault = picker.hasAttribute("data-set-default");
 
@@ -35,7 +35,7 @@ window.initDatePicker = picker => {
             enableTime: true,
             noCalendar: true,
             altInput: true,
-            altFormat: "H:i",
+            altFormat: dateFormat || "H:i",
             dateFormat: "Y-m-d H:i",
             time_24hr: true,
             defaultDate: defaultValue,
@@ -45,19 +45,20 @@ window.initDatePicker = picker => {
         if (!value && setDefault) defaultValue = date;
         flatpickr(picker, {
             altInput: true,
-            altFormat: "F j, Y",
+            altFormat: dateFormat || "F j, Y",
             dateFormat: "Y-m-d",
             defaultDate: defaultValue,
             locale: {
                 firstDayOfWeek: 1,
             },
+            mode: picker.hasAttribute("data-is-range") ? "range" : "single",
         });
     } else if (pickerType === "datetime") {
         let defaultValue = value;
         if (!value && setDefault) defaultValue = `${date} ${hour}:${mins}`;
         flatpickr(picker, {
             altInput: true,
-            altFormat: "H:i o\\n F j, Y",
+            altFormat: dateFormat || "H:i o\\n F j, Y",
             enableTime: true,
             time_24hr: true,
             dateFormat: "Y-m-d H:i",
@@ -69,9 +70,32 @@ window.initDatePicker = picker => {
     }
 };
 
+window.initTomSelect = select => {
+    if (select.tomselect) return;
+
+    // Element has been cached by the dynamic-frame-router
+    // We need to do some extra work to re-initialise it
+    if (select.classList.contains("tomselected")) {
+        select.classList.remove("tomselected");
+        select.classList.remove("ts-hidden");
+        select.classList.remove("ts-hidden-accessible");
+
+        if (select.nextElementSibling.classList.contains("ts-wrapper")) {
+            select.nextElementSibling.remove();
+        }
+    }
+
+    const options = {};
+    new TomSelect(select, options);
+};
+
 window.addEventListener("DOMContentLoaded", () => {
     const pickers = document.querySelectorAll(".flatpickr");
     pickers.forEach(picker => window.initDatePicker(picker));
+
+    const selects = document.querySelectorAll("select.tomselect");
+    selects.forEach(select => window.initTomSelect(select));
+
     registerControllers(DynamicFrame, DynamicFrameRouter, ModalFrame, ClearFlatpickr);
 });
 
@@ -79,6 +103,9 @@ window.addEventListener("DOMContentLoaded", () => {
 window.addEventListener("dynamic-frame:updated", e => {
     const pickers = e.target.querySelectorAll(".flatpickr");
     pickers.forEach(picker => window.initDatePicker(picker));
+
+    const selects = document.querySelectorAll("select.tomselect");
+    selects.forEach(select => window.initTomSelect(select));
 });
 
 window.flash = (message, type = "info") => {

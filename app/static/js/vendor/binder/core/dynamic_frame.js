@@ -159,6 +159,13 @@ class DynamicFrame extends Controller {
                     return;
                 }
 
+                // Special header for redirecting the outer page
+                // Useful for errors or session timeouts
+                if (response.headers.get("X-Dynamic-Frame-Page-Redirect")) {
+                    window.location.href = response.headers.get("X-Dynamic-Frame-Page-Redirect");
+                    return;
+                }
+
                 let text = await response.text();
                 this.updateContent(text);
             } catch (err) {
@@ -539,6 +546,9 @@ class DynamicFrameRouter extends Controller {
         if (href in this.cache) {
             this.target.replaceChildren(...this.cache[href]);
             this.target.args.url = href;
+            this.target.emit("dynamic-frame:updated", {
+                fromCache: true,
+            });
         } else {
             await this.target.loadUrl(href);
         }

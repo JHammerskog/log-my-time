@@ -4,12 +4,27 @@
     <div class="mb-3">
         <div class="mb-2">
             <label class="form-label">Time Zone</label>
-            <input class="form-control"
-                type="text"
+            <select class="form-select tomselect"
                 name="timezone"
                 id="timezone"
-                value="{{ settings.timezone }}"
-                required/>
+                required>
+                {% for tz in timezone_options %}
+                    <option value="{{ tz }}" {% if tz == settings.timezone %}selected{% endif %}>
+                        {{ tz }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-2">
+            <label class="form-label">Theme</label>
+            <select class="form-select"
+                    name="theme"
+                    id="theme">
+
+                <option value="light" {{ "selected" if settings.theme == "light" }}>Light</option>
+                <option value="dark" {{ "selected" if settings.theme == "dark" }}>Dark</option>
+            </select>
         </div>
 
         <div class="mb-2">
@@ -17,8 +32,7 @@
             <select class="form-select"
                     name="holiday_location"
                     id="holiday_location"
-                    value="{{ settings.holiday_location }}"
-                    required>
+                    value="{{ settings.holiday_location }}">
 
                 {# TODO: Add more locations #}
                 {% set locations = {

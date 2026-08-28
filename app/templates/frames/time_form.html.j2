@@ -4,7 +4,7 @@
     <form id="addEditForm"
           method="post"
           action="/frames/time_form/{{ time.id if time else '' }}">
-        <div class="row mb-3">
+        <div class="row">
             <div class="col-md-6">
                 <label class="form-label" for="start-time">Start Time</label>
                 <div class="input-group">
@@ -54,7 +54,8 @@
                             <input class="flatpickr break"
                                 type="text"
                                 name="break-start-{{ break.id }}"
-                                data-date-type="time"
+                                data-date-type="datetime"
+                                data-date-format="H:i"
                                 data-date-value="{{ break_start }}"/>
 
                             <i class="bi bi-arrow-right me-2"></i>
@@ -62,10 +63,11 @@
                             <input class="flatpickr break"
                                 type="text"
                                 name="break-end-{{ break.id }}"
-                                data-date-type="time"
+                                data-date-type="datetime"
+                                data-date-format="H:i"
                                 data-date-value="{{ break_end }}"/>
 
-                            <span class="badge bg-secondary">{{ break.duration }}</span>
+                            <span class="badge bg-secondary">{{ break.duration_pretty }}</span>
                         </div>
                     {% endfor %}
                     <button type="button" class="add-break btn btn-link p-0 mb-2">Add Break</button>
@@ -123,7 +125,7 @@
                 if (response.ok) {
                     frame.emit("time:changed");
                 } else {
-                    flash("Failed to add time record", "danger");
+                    flash("Failed to add time record.", "danger");
                     console.error(`Failed to add time record: ${await response.text()}`)
                 }
             });
@@ -137,7 +139,7 @@
                 if (response.status == 200) {
                     frame.emit("time:changed");
                 } else {
-                    flash("Failed to delete time record", "danger");
+                    flash("Failed to delete time record.", "danger");
                     console.error(`Failed to delete time record ${id}: ${await response.text()}`)
                 }
             });

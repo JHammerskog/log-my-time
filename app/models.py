@@ -1,4 +1,4 @@
-from typing import Optional, Self
+from typing import Literal, Optional, Self
 
 import arrow
 import sqlalchemy as sa
@@ -7,9 +7,12 @@ from argon2.exceptions import VerifyMismatchError
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from app import Model, db
+from app.types import DayOfWeek0Indexed, TimeInSeconds
 
 UnixTimestamp = int
 DurationDays = float
+
+DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
 class BaseModel(Model):  # type: ignore
@@ -98,6 +101,7 @@ class User(BaseModel):
     verified: Mapped[Optional[bool]] = mapped_column(sa.Boolean, default=False, nullable=False)
     last_seen_whats_new: Mapped[Optional[int]] = mapped_column(sa.Integer, sa.ForeignKey("whats_new.id"), nullable=True)
     is_admin: Mapped[Optional[bool]] = mapped_column(sa.Boolean)
+    last_login_at: Mapped[Optional[int]] = mapped_column(sa.Integer, nullable=True)
 
     sessions: Mapped[list["LoginSession"]] = relationship(
         "LoginSession", back_populates="user", cascade="all, delete-orphan"
@@ -105,7 +109,9 @@ class User(BaseModel):
     settings: Mapped["Settings"] = relationship(back_populates="user", cascade="all, delete-orphan", uselist=False)
     times: Mapped[list["Time"]] = relationship("Time", back_populates="user", cascade="all, delete-orphan")
     leaves: Mapped[list["Leave"]] = relationship("Leave", back_populates="user", cascade="all, delete-orphan")
-    slack_tokens: Mapped[list["UserToSlackToken"]] = relationship("UserToSlackToken", back_populates="user")
+    slack_tokens: Mapped[list["UserToSlackToken"]] = relationship(
+        "UserToSlackToken", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def verify(self):
         """
@@ -152,6 +158,11 @@ class LoginSession(BaseModel):
 
     user: Mapped[User] = relationship("User", viewonly=True, back_populates="sessions")
 
+    @property
+    def created_at(self) -> arrow.Arrow:
+        expires = arrow.get(self.expires)
+        return expires.shift(hours=7 * 24 * -1)
+
 
 class Time(TimeHelperMixin, BaseModel):
     start: Mapped[UnixTimestamp] = mapped_column(sa.Integer, nullable=False)
@@ -182,18 +193,27 @@ class Break(BaseModel):
     start: Mapped[UnixTimestamp] = mapped_column(sa.Integer)
     end: Mapped[Optional[UnixTimestamp]] = mapped_column(sa.Integer, nullable=True)
     note: Mapped[Optional[str]] = mapped_column(sa.String(255), nullable=True)
+    user_id: Mapped[int] = mapped_column(sa.Integer, sa.ForeignKey("user.id"), nullable=False)
 
     time: Mapped[Time] = relationship("Time", viewonly=True, back_populates="breaks")
 
     @property
-    def duration(self) -> str:
+    def duration_pretty(self) -> str:
+        minutes = int(self.duration / 60)
+        return f"{minutes} minutes" if minutes != 1 else "1 minute"
+
+    @property
+    def duration(self) -> TimeInSeconds:
+        """
+        Return the duration of this break in minutes
+        """
         if self.end:
             diff = arrow.get(self.end) - arrow.get(self.start)
         else:
             diff = arrow.now() - arrow.get(self.start)
 
-        minutes = int(int(diff.total_seconds()) / 60)
-        return f"{minutes} minutes" if minutes != 1 else "1 minute"
+        duration_in_seconds = int(diff.total_seconds())
+        return duration_in_seconds
 
 
 class Leave(TimeHelperMixin, BaseModel):
@@ -232,6 +252,7 @@ class Settings(BaseModel):
         sa.String(7), nullable=False
     )  # This is stored as a 7 char string, the day char if the day is a work day and a hyphen if not, eg: MTWTF--
     auto_update_slack_status: Mapped[bool | None] = mapped_column(sa.Boolean, nullable=True, default=False)
+    theme: Mapped[Literal["light", "dark"] | None] = mapped_column(sa.String(20), nullable=True, default=None)
 
     user_id: Mapped[int] = mapped_column(sa.Integer, sa.ForeignKey("user.id"), nullable=False)
 
@@ -253,14 +274,19 @@ class Settings(BaseModel):
 
     def work_days_list(self) -> list[str]:
         work_days = []
-        day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        for day, day_name in zip(self.work_days, day_names):
+        for day, day_name in zip(self.work_days, DAYS_OF_WEEK):
             if day != "-":
                 work_days.append(day_name)
         return work_days
 
     def total_work_days(self):
         return sum([1 if day != "-" else 0 for day in self.work_days])
+
+    def is_work_day(self, day: DayOfWeek0Indexed) -> bool:
+        """
+        Check if the provided day name is a work day
+        """
+        return DAYS_OF_WEEK[day] in self.work_days_list()
 
 
 class WhatsNew(BaseModel):
